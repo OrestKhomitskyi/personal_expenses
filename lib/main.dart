@@ -1,104 +1,120 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:personal_expenses/transaction.dart';
+import 'package:personal_expenses/models/transaction.dart';
+import 'package:personal_expenses/widgets/chart.dart';
+import 'package:personal_expenses/widgets/new_transaction.dart';
+import 'package:personal_expenses/widgets/transaction_list.dart';
 
 void main() => runApp(MyApp());
 
-class MyApp extends StatelessWidget {
-  final List<Transaction> transactions = [
+class MyApp extends StatefulWidget {
+  // This widget is the root of your application.
+
+  @override
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  void _startAddNewTransaction(BuildContext ctx) {
+    showModalBottomSheet(
+        context: ctx,
+        builder: (ccc) {
+          return GestureDetector(
+            child: NewTransaction(_handleAddNewTransaction),
+            onTap: () {},
+            behavior: HitTestBehavior.opaque,
+          );
+        });
+  }
+
+  final List<Transaction> _userTransactions = [
     Transaction(
-        amount: 25.99, title: 'Zara trousers', id: 't1', date: DateTime.now()),
-    Transaction(
-        amount: 123.99, title: 'Nike shoes', id: 't2', date: DateTime.now())
+        amount: 25.99,
+        title: 'Wednesday grocery',
+        id: 't1',
+        date: DateTime.now().subtract(Duration(days: 5))),
+    // Transaction(
+    //     amount: 123.99, title: 'Nike shoes', id: 't2', date: DateTime.now())
   ];
 
-  // This widget is the root of your application.
+  void _handleAddNewTransaction(
+      String titleInput, double amountInput, DateTime chosenDate) {
+    final newTx = Transaction(
+        date: chosenDate,
+        title: titleInput,
+        amount: amountInput,
+        id: DateTime.now().toString());
+
+    setState(() {
+      _userTransactions.add(newTx);
+    });
+  }
+
+  List<Transaction> get _recentTransactions {
+    return _userTransactions.where((tx) {
+      return tx.date.isAfter(DateTime.now().subtract(Duration(days: 7)));
+    }).toList();
+  }
+
+  void _deleteTransaction(String transactionId) {
+    setState(() {
+      _userTransactions.removeWhere((tx) {
+        return tx.id == transactionId;
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
         title: 'Flutter Demo',
         theme: ThemeData(
-          primarySwatch: Colors.blue,
-        ),
+            primarySwatch: Colors.deepPurple,
+            accentColor: Colors.amber,
+            textTheme: ThemeData.light().textTheme.copyWith(
+                title: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Opensans'),
+                button: TextStyle(color: Colors.white)),
+            appBarTheme: AppBarTheme(
+                textTheme: ThemeData.light().textTheme.copyWith(
+                    title: TextStyle(
+                        fontFamily: 'OpenSans',
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold))),
+            fontFamily: 'Quicksand'),
         home: Scaffold(
-          appBar: AppBar(
-            title: Text("Expenses"),
-          ),
-          body: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            // mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: <Widget>[
-              Container(
-                  width: double.infinity,
-                  child: Card(
-                    child: Text('CHART!'),
-                  )),
-              Card(
-                elevation: 5,
-                child: Container(
-                  padding: EdgeInsets.all(5),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: <Widget>[
-                      TextField(
-                        decoration: InputDecoration(labelText: 'Title'),
-                      ),
-                      TextField(
-                        decoration: InputDecoration(labelText: 'Amount'),
-                      ),
-                      FlatButton(
-                        child: Text('Add transaction'),
-                        onPressed: () {},
-                        textColor: Colors.purple,
-                      )
-                    ],
+            appBar: AppBar(
+              centerTitle: false,
+              actions: <Widget>[
+                Builder(
+                  builder: (context) => IconButton(
+                    icon: Icon(Icons.add),
+                    onPressed: () {
+                      _startAddNewTransaction(context);
+                    },
                   ),
-                ),
+                )
+              ],
+              title: Text("Personal Expenses"),
+            ),
+            body: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                // mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: <Widget>[
+                  Chart(_recentTransactions),
+                  TransactionList(_userTransactions, _deleteTransaction),
+                ],
               ),
-              Column(
-                children: transactions.map((tx) {
-                  return Card(
-                    child: Row(
-                      children: <Widget>[
-                        Container(
-                          // width: 85,
-                          decoration: BoxDecoration(
-                              border:
-                                  Border.all(color: Colors.purple, width: 2)),
-                          padding: EdgeInsets.all(10.0),
-                          margin: EdgeInsets.symmetric(
-                              vertical: 10, horizontal: 15),
-                          child: Text(
-                            "\$ ${tx.amount.toString()}",
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 20,
-                                color: Colors.purple),
-                          ),
-                        ),
-                        Column(
-                          // mainAxisAlignment: MainAxisAlignment.end,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Text(
-                              tx.title,
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 15),
-                            ),
-                            Text(
-                              DateFormat.yMd().add_Hm().format(tx.date),
-                              style: TextStyle(
-                                  fontSize: 13, color: Colors.black38),
-                            )
-                          ],
-                        )
-                      ],
-                    ),
-                  );
-                }).toList(),
-              )
-            ],
-          ),
-        ));
+            ),
+            floatingActionButton: Builder(
+              builder: (context) => FloatingActionButton(
+                onPressed: () {
+                  _startAddNewTransaction(context);
+                },
+                child: Icon(Icons.add),
+              ),
+            )));
   }
 }
